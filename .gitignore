@@ -1,0 +1,13 @@
+# Cache des cotations — se reconstruit tout seul au premier lancement
+data/cache/
+
+# Clé API Anthropic : NE JAMAIS PUBLIER
+data/settings.json
+
+# Dépendances (le projet n'en a aucune, mais au cas où)
+node_modules/
+
+# Divers
+.DS_Store
+Thumbs.db
+*.log

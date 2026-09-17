@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AlphaDesk — analyse technique et décision d'investissement</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📊</text></svg>">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>AlphaDesk</h1>
+      <div class="tag"><span class="dot" id="srvDot"></span><span id="srvTxt">connexion…</span></div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <div class="sep">Décider</div>
+      <button data-view="analyse" class="active"><span class="ico">◧</span> Analyse d'un titre</button>
+      <button data-view="screener"><span class="ico">⛃</span> Screener</button>
+      <button data-view="backtest"><span class="ico">↺</span> Backtest du moteur</button>
+      <button data-view="comparateur"><span class="ico">⚖</span> Comparateur de méthodes</button>
+      <div class="sep">Suivre</div>
+      <button data-view="portefeuille"><span class="ico">▤</span> Portefeuille</button>
+      <button data-view="journal"><span class="ico">✎</span> Journal de bord</button>
+      <div class="sep">Comprendre</div>
+      <button data-view="academie"><span class="ico">◈</span> Académie</button>
+      <button data-view="quiz"><span class="ico">?</span> Quiz</button>
+      <div class="sep">Configurer</div>
+      <button data-view="reglages"><span class="ico">⚙</span> Réglages</button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div id="profileSummary">—</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="search-wrap">
+        <span class="mag">⌕</span>
+        <input id="search" type="text" placeholder="Rechercher une action, un ETF, un indice, une crypto…" autocomplete="off">
+        <div class="results" id="results" style="display:none"></div>
+      </div>
+      <div class="row" style="gap:8px">
+        <div class="seg" id="periodSeg"></div>
+        <button class="btn" id="refreshBtn" title="Recharger les données">↻</button>
+      </div>
+      <div class="grow"></div>
+      <div class="row sm dim" id="topInfo"></div>
+    </header>
+
+    <div class="content" id="content"></div>
+  </main>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

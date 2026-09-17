@@ -1,0 +1,11 @@
+{
+  "name": "alphadesk",
+  "version": "1.0.0",
+  "description": "Poste d'analyse technique et d'aide a la decision d'investissement - 100% local",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "private": true
+}
