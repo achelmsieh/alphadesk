@@ -1,0 +1,31 @@
+# =========================================================================
+# Déploiement sur Render — https://render.com
+#
+# Render lit ce fichier automatiquement quand vous connectez le dépôt.
+# Aucune dépendance à installer : le serveur n'utilise que Node.
+#
+# ATTENTION : définissez ALPHADESK_TOKEN dans le tableau de bord Render
+# (Environment → Add Environment Variable). Sans lui, l'analyste IA et les
+# réglages seraient ouverts à tout visiteur de l'URL.
+# =========================================================================
+services:
+  - type: web
+    name: alphadesk
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: "echo 'aucune dependance a installer'"
+    startCommand: "node server.js"
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Jeton d'administration : généré automatiquement par Render à la
+      # création. Récupérez sa valeur dans Environment, puis collez-la dans
+      # Réglages → Instance en ligne, depuis le navigateur.
+      - key: ALPHADESK_TOKEN
+        generateValue: true
+      # Clé Anthropic — facultative. Tout AlphaDesk fonctionne sans.
+      # Ajoutez-la à la main seulement si vous voulez l'analyste IA en ligne.
+      # - key: ANTHROPIC_API_KEY
+      #   sync: false

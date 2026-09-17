@@ -22,7 +22,8 @@ const S = {
   compar: null,
   bt: null,
   screen: null,
-  ai: { hasKey: false, text: null, loading: false }
+  ai: { hasKey: false, text: null, loading: false },
+  protege: false
 };
 
 function loadProfile() {
@@ -121,6 +122,16 @@ async function api(path, opts) {
   if (!opts) { cache.set(key, j); setTimeout(() => cache.delete(key), 120000); }
   return j;
 }
+/** Jeton d'administration : seulement necessaire quand l'application est
+    deployee en ligne. En local le serveur ne le reclame pas. */
+const getToken = () => localStorage.getItem('alphadesk.token') || '';
+function postJSON(path, body) {
+  const headers = { 'content-type': 'application/json' };
+  const t = getToken();
+  if (t) headers['x-alphadesk-token'] = t;
+  return fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+}
+
 const getChart = (sym, range, interval) => api(`/api/chart?symbol=${encodeURIComponent(sym)}&range=${range}&interval=${interval}`);
 const getFund = sym => api(`/api/fundamentals?symbol=${encodeURIComponent(sym)}`);
 
@@ -140,7 +151,8 @@ async function init() {
   try {
     const h = await api('/api/health');
     S.ai.hasKey = !!h.ai;
-    $('#srvTxt').textContent = 'connecté · v' + h.version;
+    S.protege = !!h.protege;
+    $('#srvTxt').textContent = 'connecté · v' + h.version + (h.protege ? ' · protégé' : '');
   } catch {
     $('#srvDot').classList.add('off');
     $('#srvTxt').textContent = 'serveur hors ligne';
@@ -960,8 +972,12 @@ async function runAI(r) {
     } : null
   };
   try {
-    const res = await fetch('/api/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await postJSON('/api/ai', payload);
     const j = await res.json();
+    if (res.status === 401) {
+      toast('Jeton d\'administration requis — renseignez-le dans Réglages', 'err');
+      $('#aiLoad')?.remove(); card.querySelector('button').disabled = false; return;
+    }
     if (j.ok) { S.ai.text = j.text; render(); }
     else { toast('IA indisponible : ' + (j.reason || 'erreur'), 'err'); $('#aiLoad')?.remove(); card.querySelector('button').disabled = false; }
   } catch (e) {
@@ -2055,6 +2071,20 @@ async function viewReglages(c) {
             sur votre machine et n'est jamais envoyée ailleurs qu'à l'API d'Anthropic.</div>
         </div>
 
+        ${S.protege ? `<div class="card" style="border-color:rgba(250,178,25,.45)">
+          <h3>Instance en ligne — jeton d'administration</h3>
+          <p class="sm dim" style="margin-top:0">
+            Ce serveur est accessible par URL, donc les réglages et l'analyste IA sont fermés au public :
+            sans cela, n'importe quel visiteur pourrait dépenser vos crédits Anthropic. Collez ici le jeton
+            défini dans la variable d'environnement <span class="mono">ALPHADESK_TOKEN</span> de l'hébergeur.
+            Il reste dans ce navigateur, il n'est jamais affiché ailleurs.
+          </p>
+          <input type="password" id="adm_token" placeholder="jeton d'administration"
+                 value="${esc(getToken())}" style="width:100%" autocomplete="off">
+          <div class="xs faint" style="margin-top:6px">Sans ce jeton, tout le reste fonctionne :
+            analyse, screener, backtest, comparateur et académie restent ouverts.</div>
+        </div>` : ''}
+
         <div class="card">
           <h3>Affichage</h3>
           <div class="row between wrap" style="gap:14px">
@@ -2127,18 +2157,26 @@ async function viewReglages(c) {
     saveProfile(); S.report = null; S.bt = null; S.screen = null; S.compar = null;
     toast('Réglages enregistrés — les analyses sont recalculées', 'ok');
   };
+  const jetonInput = $('#adm_token');
+  if (jetonInput) {
+    jetonInput.onchange = () => {
+      const v = jetonInput.value.trim();
+      if (v) localStorage.setItem('alphadesk.token', v); else localStorage.removeItem('alphadesk.token');
+      toast(v ? 'Jeton enregistré dans ce navigateur' : 'Jeton effacé', 'ok');
+    };
+  }
+
   $('#k_save').onclick = async () => {
     const key = $('#k_key').value.trim();
-    await fetch('/api/settings', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ...(key ? { anthropicKey: key } : {}), aiModel: $('#k_model').value })
-    });
+    const r = await postJSON('/api/settings', { ...(key ? { anthropicKey: key } : {}), aiModel: $('#k_model').value });
+    if (r.status === 401) { toast('Jeton d\'administration invalide ou manquant', 'err'); return; }
     S.ai.hasKey = !!key || st.hasKey;
     toast('Enregistré', 'ok'); render();
   };
   const kd = $('#k_del');
   if (kd) kd.onclick = async () => {
-    await fetch('/api/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ anthropicKey: '' }) });
+    const r = await postJSON('/api/settings', { anthropicKey: '' });
+    if (r.status === 401) { toast('Jeton d\'administration invalide ou manquant', 'err'); return; }
     S.ai.hasKey = false; toast('Clé supprimée', 'ok'); render();
   };
 }

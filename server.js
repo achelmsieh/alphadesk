@@ -21,6 +21,44 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 fs.mkdirSync(CACHE_DIR, { recursive: true });
 
+/* =========================================================================
+   PROTECTION D'UNE INSTANCE PUBLIQUE
+
+   En local, AlphaDesk est ouvert : c'est votre machine, vous etes seul.
+   Des qu'il est deploye sur un hebergeur accessible par URL, deux routes
+   doivent etre fermees, sinon n'importe quel visiteur peut :
+     · POST /api/settings -> ecrire dans vos reglages,
+     · POST /api/ai       -> depenser VOS credits Anthropic.
+
+   Il suffit donc de definir la variable d'environnement ALPHADESK_TOKEN
+   sur l'hebergeur. Tant qu'elle est absente (usage local), rien ne change.
+   ========================================================================= */
+const ADMIN_TOKEN = process.env.ALPHADESK_TOKEN || '';
+const PROTECTED = !!ADMIN_TOKEN;
+
+function estAdmin(req) {
+  if (!PROTECTED) return true;
+  const fourni = req.headers['x-alphadesk-token'];
+  if (typeof fourni !== 'string' || fourni.length !== ADMIN_TOKEN.length) return false;
+  // comparaison a duree constante : ne revele pas le jeton par chronometrage
+  let diff = 0;
+  for (let i = 0; i < ADMIN_TOKEN.length; i++) diff |= fourni.charCodeAt(i) ^ ADMIN_TOKEN.charCodeAt(i);
+  return diff === 0;
+}
+
+/* Limitation de debit simple, par adresse : evite qu'une instance publique
+   ne serve de relais Yahoo gratuit a toute la planete. */
+const hits = new Map();
+function tropDeRequetes(req) {
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '?';
+  const now = Date.now(), fenetre = 60_000, plafond = 150;
+  const e = hits.get(ip);
+  if (!e || now - e.debut > fenetre) { hits.set(ip, { debut: now, n: 1 }); return false; }
+  e.n++;
+  if (hits.size > 5000) hits.clear();          // garde-fou memoire
+  return e.n > plafond;
+}
+
 /* ----------------------------- utilitaires ----------------------------- */
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -261,8 +299,14 @@ const server = http.createServer(async (req, res) => {
   const p = url.pathname;
   try {
     if (p.startsWith('/api/')) {
+      if (tropDeRequetes(req)) return sendJSON(res, 429, { error: 'trop de requetes, patientez une minute' });
+
       if (p === '/api/health') {
-        return sendJSON(res, 200, { ok: true, version: '1.0.0', ai: !!(process.env.ANTHROPIC_API_KEY || readSettings().anthropicKey) });
+        return sendJSON(res, 200, {
+          ok: true, version: '1.0.0',
+          ai: !!(process.env.ANTHROPIC_API_KEY || readSettings().anthropicKey),
+          protege: PROTECTED
+        });
       }
       if (p === '/api/chart') {
         const s = url.searchParams.get('symbol');
@@ -286,6 +330,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/api/settings') {
         if (req.method === 'POST') {
+          if (!estAdmin(req)) return sendJSON(res, 401, { error: "jeton d'administration requis" });
           const b = await readBody(req);
           const next = { ...readSettings(), ...b };
           writeSettings(next);
@@ -294,7 +339,10 @@ const server = http.createServer(async (req, res) => {
         const s = readSettings();
         return sendJSON(res, 200, { hasKey: !!(s.anthropicKey || process.env.ANTHROPIC_API_KEY), aiModel: s.aiModel || 'claude-sonnet-5' });
       }
-      if (p === '/api/ai' && req.method === 'POST') return sendJSON(res, 200, await apiAI(await readBody(req)));
+      if (p === '/api/ai' && req.method === 'POST') {
+        if (!estAdmin(req)) return sendJSON(res, 401, { error: "jeton d'administration requis" });
+        return sendJSON(res, 200, await apiAI(await readBody(req)));
+      }
       return sendJSON(res, 404, { error: 'route inconnue' });
     }
 
@@ -318,5 +366,8 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   log(`AlphaDesk démarré  ->  http://localhost:${PORT}`);
+  log(PROTECTED
+    ? 'Mode protégé : réglages et IA exigent le jeton ALPHADESK_TOKEN.'
+    : 'Mode local ouvert. Si vous exposez ce serveur sur internet, définissez ALPHADESK_TOKEN.');
   getYahooSession();
 });

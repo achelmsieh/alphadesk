@@ -24,7 +24,7 @@ pas de `node_modules`. Tout est écrit à la main.
 
 ---
 
-## Les six écrans
+## Les écrans
 
 | Écran | Ce qu'il fait |
 |---|---|
@@ -243,6 +243,45 @@ AlphaDesk/
 Vider les données du site les effacerait : le bouton *Exporter le dossier* du portefeuille produit une sauvegarde JSON.
 
 ---
+
+## Le mettre en ligne
+
+AlphaDesk a besoin de son petit serveur Node : le navigateur ne peut pas appeler Yahoo Finance
+directement (blocage CORS), c'est le relais qui s'en charge. **GitHub Pages ne convient donc pas** —
+la page s'afficherait, mais aucune donnée n'arriverait. Il faut un hébergeur qui exécute Node.
+
+### Render (gratuit)
+
+1. Créez un compte sur [render.com](https://render.com) et connectez votre compte GitHub.
+2. *New → Blueprint*, sélectionnez ce dépôt. Render lit `render.yaml` et configure tout seul.
+3. Une fois déployé, ouvrez *Environment* et copiez la valeur de `ALPHADESK_TOKEN`.
+4. Sur le site en ligne : **Réglages → Instance en ligne**, collez ce jeton.
+
+L'instance gratuite s'endort après 15 minutes sans visite ; le premier chargement suivant prend
+une trentaine de secondes, puis tout redevient instantané.
+
+### Pourquoi un jeton
+
+Dès que l'application est accessible par une URL publique, deux routes doivent être fermées :
+
+| Route | Risque si elle reste ouverte |
+|---|---|
+| `POST /api/settings` | N'importe qui écrit dans vos réglages |
+| `POST /api/ai` | N'importe qui **dépense vos crédits Anthropic** |
+
+Définir `ALPHADESK_TOKEN` suffit à les fermer : le serveur exige alors un en-tête
+`x-alphadesk-token`, comparé en temps constant. Tant que la variable est absente — c'est-à-dire
+en usage local — rien ne change et tout reste ouvert.
+
+Le reste de l'application demeure accessible sans jeton : analyse, screener, backtest, comparateur
+et académie. Une limitation de débit de 150 requêtes par minute et par adresse évite que votre
+instance ne serve de relais Yahoo à toute la planète.
+
+### Vos données restent chez vous
+
+Portefeuille et journal vivent dans le `localStorage` de **votre navigateur**, jamais sur le serveur.
+Déployer l'application en ligne ne publie donc aucune de vos positions : deux personnes ouvrant la
+même URL voient chacune leur propre portefeuille, vide au départ.
 
 ## Limites — à lire une fois
 
