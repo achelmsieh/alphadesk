@@ -325,6 +325,103 @@ export const LECONS = [
       }
     ],
     aRetenir: 'On ne corrige pas un biais par la lucidité : on le neutralise par une règle écrite à l’avance, quand on est calme.'
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: 'lirecomparaison',
+    titre: 'Lire une comparaison de méthodes sans se faire piéger',
+    famille: 'Méthode',
+    niveau: 'base',
+    resume: 'Les cinq pièges qui font choisir la mauvaise méthode.',
+    accroche: `Le comparateur de cette application produit un classement. Un classement rassure — et c'est exactement pour cela qu'il est dangereux. Voici les cinq façons de mal le lire, dans l'ordre où elles font perdre de l'argent.`,
+    sections: [
+      {
+        t: '1. Regarder le rendement total au lieu du rendement annuel',
+        p: [
+          "Sur vingt ans, les gains se multiplient les uns par les autres. Une méthode à « +1 700 % » et une autre à « +500 % » semblent séparées par un gouffre : en réalité c'est 23 % par an contre 14 % par an. Et un écart affiché en « 1 200 points » ne veut strictement rien dire.",
+          "**Ne comparez jamais que des rendements ANNUELS.** C'est pour cette raison que la colonne principale du comparateur est « rendement / an » et non le cumul."
+        ]
+      },
+      {
+        t: '2. Confondre « n a pas perdu » et « a bien résisté »',
+        p: [
+          "Une méthode qui reste en liquidités ne perd rien pendant un krach. Elle affiche une perte maximale de 0 %, arrive en tête du tableau, et paraît brillante. Elle n'était simplement pas là.",
+          "**Regardez toujours la colonne « temps investi » avant le résultat.** Une méthode investie 8 % du temps n'a pas protégé votre argent : elle ne l'a jamais engagé. Ne pas jouer n'est pas gagner. Le comparateur signale ces lignes en orange et les écarte de son verdict, mais il continue de les afficher — les cacher serait une autre façon de mentir."
+        ]
+      },
+      {
+        t: '3. Juger sur une seule valeur',
+        p: [
+          "Avec quatorze méthodes testées sur un titre, il s'en trouve toujours une qui gagne. Cela ne dit rien de sa valeur : cela dit qu'on a lancé quatorze pièces et regardé celle qui est tombée sur face.",
+          "**L'onglet « Épreuve de robustesse » existe pour ça.** Il teste chaque méthode sur dix valeurs différentes et compte sur combien elle gagne. Une méthode qui l'emporte sur 8 valeurs sur 10 a probablement quelque chose. Une méthode qui gagne 5 fois sur 10 est une pièce de monnaie avec un nom savant."
+        ]
+      },
+      {
+        t: '4. Tester sur une période qui ne contient aucune crise',
+        p: [
+          "Cinq ans de marché haussier récompensent la méthode la plus simple : ne rien faire. Toutes les méthodes de protection y paraissent inutiles — jusqu'à la première vraie baisse.",
+          "**Testez sur « depuis 2000 ».** Cette période contient l'éclatement de la bulle internet, 2008, 2011, le Covid et 2022. Une méthode qui tient là-dedans a été éprouvée ; une méthode validée sur 2021-2026 n'a rien traversé du tout."
+        ]
+      },
+      {
+        t: '5. Oublier de demander « et si c était le hasard ? »',
+        p: [
+          "Pour les avis d'analystes, le comparateur teste aussi la stratégie inverse — acheter quand ils sont pessimistes. Ce n'est pas une provocation, c'est un contrôle.",
+          "Si suivre les analystes ET faire l'inverse battent tous les deux la référence, ce n'est pas l'avis qui porte l'information : c'est simplement que rester à l'écart par moments a payé. **Un résultat qui reste vrai quand on inverse la règle n'est pas un résultat.** Gardez ce réflexe pour toutes les méthodes qu'on vous vendra."
+        ]
+      },
+      {
+        t: 'La bonne façon de s en servir',
+        p: [
+          "Ouvrez l'onglet Robustesse, choisissez le panier varié et « depuis 2000 ». Regardez d'abord la note de fiabilité en haut : en dessous de 45, ne concluez rien. Puis lisez la méthode la mieux classée, cliquez sur sa ligne, et lisez l'encadré « en clair » ainsi que le détail valeur par valeur.",
+          "Enfin — et c'est le plus important — **relancez sur un autre panier**. Si la même méthode ressort en tête, vous tenez quelque chose. Si le classement change du tout au tout, vous regardiez du bruit, et la bonne décision est de s'en tenir à ce qui est simple et peu coûteux."
+        ]
+      }
+    ],
+    aRetenir: "Un classement de méthodes se lit avec quatre réflexes : rendement ANNUEL, temps réellement investi, plusieurs valeurs, et une période qui contient une crise. Sans ces quatre-là, le plus beau des tableaux ne vaut rien."
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: 'crises',
+    titre: 'Ce que les crises font réellement à un portefeuille',
+    famille: 'Ce qui compte',
+    niveau: 'inter',
+    resume: 'Pourquoi le chemin compte davantage que la destination.',
+    accroche: `On choisit une méthode en regardant ce qu'elle rapporte. On l'abandonne en regardant ce qu'elle fait perdre. Les crises ne se contentent pas de coûter de l'argent : elles font prendre les pires décisions, au pire moment.`,
+    sections: [
+      {
+        t: 'Le chiffre qui décide vraiment : la pire perte',
+        p: [
+          "Une stratégie à 9 % par an avec 55 % de perte maximale est mathématiquement supérieure à une stratégie à 8 % par an avec 22 %. En pratique c'est l'inverse qui se produit : **presque personne ne tient une perte de 55 %.** On vend au creux, on revient trop tard, et le rendement théorique n'est jamais encaissé.",
+          "C'est pourquoi l'écran « Résistance aux crises » mesure la perte encaissée et le temps de récupération, et non le rendement."
+        ]
+      },
+      {
+        t: 'Toutes les crises ne se ressemblent pas',
+        p: [
+          "**Les baisses lentes** (2000-2003) sont les plus destructrices psychologiquement : chaque mois on espère le rebond, et trois ans plus tard tout est parti. Les méthodes de sortie y brillent, parce qu'elles ont le temps de réagir.",
+          "**Les krachs éclair** (Covid 2020) sont leur exact opposé : la chute est trop rapide pour que quiconque sorte à temps, et le rebond trop rapide pour qu'on rentre à temps. Les méthodes de protection y perdent deux fois — elles vendent bas et rachètent haut.",
+          "Aucune méthode ne gagne sur les deux. C'est une limite structurelle, pas un défaut de réglage : le savoir évite de chercher la méthode parfaite, qui n'existe pas."
+        ]
+      },
+      {
+        t: 'Le temps de récupération, l indicateur oublié',
+        p: [
+          "Perdre 30 % n'est pas le vrai problème. Mettre sept ans à les récupérer en est un : ce sont sept années où votre argent ne travaille pas, et sept années de tentation d'abandonner.",
+          "Le tableau des crises affiche cette durée pour chaque méthode et chaque épisode. Regardez-la autant que la perte elle-même."
+        ]
+      },
+      {
+        t: 'Les scénarios inventés : ce qu ils apportent, ce qu ils n apportent pas',
+        p: [
+          "L'application peut fabriquer un choc — krach éclair, baisse lente, choc en V — et le faire subir aux méthodes. Le bruit quotidien est calibré sur la volatilité réelle du titre, et le tirage est déterministe pour que la comparaison entre méthodes reste équitable.",
+          "**Ce n'est pas une prévision.** Personne ne sait quelle forme aura la prochaine crise. Cela sert à une seule chose, mais elle est précieuse : voir COMMENT une méthode réagit à une forme de baisse donnée, avant d'y être confronté avec de l'argent réel."
+        ]
+      }
+    ],
+    aRetenir: "Choisissez votre méthode sur la perte que vous êtes capable de traverser, pas sur le rendement que vous espérez. La première est réelle, le second n'est qu'une hypothèse."
   }
 ];
 
@@ -363,7 +460,8 @@ export const PROGRESSION = [
       { type: 'lecon', id: 'tendance' },
       { type: 'lecon', id: 'momentum' },
       { type: 'lecon', id: 'retour' },
-      { type: 'lecon', id: 'nemarchepas' }
+      { type: 'lecon', id: 'nemarchepas' },
+      { type: 'lecon', id: 'lirecomparaison' }
     ],
     exercice: 'Ouvrez l’écran Méthodes et comparez-les sur trois titres très différents : une valeur en forte tendance, une valeur qui oscille, un indice. Notez comment le classement change complètement — c’est la leçon la plus importante de tout ce parcours.'
   },
@@ -371,6 +469,7 @@ export const PROGRESSION = [
     titre: 'Semaine 4 — tenir dans la durée',
     but: 'Transformer une méthode en pratique régulière.',
     etapes: [
+      { type: 'lecon', id: 'crises' },
       { type: 'lecon', id: 'diversification' },
       { type: 'lecon', id: 'psychologie' },
       { type: 'fiche', id: 'divergence' },

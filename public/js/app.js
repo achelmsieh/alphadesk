@@ -9,6 +9,11 @@ import { UNIVERS, BENCHMARKS, PERIODES, suggestBenchmark } from './universe.js';
 import { LECONS, PROGRESSION } from './lessons.js';
 import { METHODES, comparerMethodes, prepareForStrategies } from './strategies.js';
 import * as PF from './portfolio.js';
+import {
+  $, el, esc, clamp, n, px, pct, money, curSym, big, dt, annee, cls, sgn,
+  cssVar, tint, meter, meterDiv, sevColor, qualColor, toast, terme
+} from './format.js';
+import { vueComparateur } from './vues-comparateur.js';
 
 /* ============================== état global ============================= */
 const S = {
@@ -36,80 +41,9 @@ function saveProfile() {
   renderProfileSummary();
 }
 
-/* ================================ formats =============================== */
-const $ = s => document.querySelector(s);
-const el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstElementChild; };
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-function n(x, d = 2) {
-  if (x === null || x === undefined || !isFinite(x)) return '—';
-  return Number(x).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
-}
-function px(x) {
-  if (x === null || x === undefined || !isFinite(x)) return '—';
-  const a = Math.abs(x);
-  return n(x, a >= 1000 ? 0 : a >= 10 ? 2 : a >= 1 ? 3 : 4);
-}
-function pct(x, d = 2) { return x === null || x === undefined || !isFinite(x) ? '—' : (x >= 0 ? '+' : '') + n(x, d) + ' %'; }
-function money(x, cur = '') {
-  if (x === null || !isFinite(x)) return '—';
-  return n(x, Math.abs(x) >= 1000 ? 0 : 2) + (cur ? ' ' + curSym(cur) : '');
-}
-function curSym(c) { return ({ EUR: '€', USD: '$', GBP: '£', CHF: 'CHF', JPY: '¥' })[c] || c || ''; }
-function big(x) {
-  if (x === null || !isFinite(x)) return '—';
-  const a = Math.abs(x);
-  if (a >= 1e12) return n(x / 1e12, 2) + ' T';
-  if (a >= 1e9) return n(x / 1e9, 2) + ' Md';
-  if (a >= 1e6) return n(x / 1e6, 1) + ' M';
-  if (a >= 1e3) return n(x / 1e3, 1) + ' k';
-  return n(x, 0);
-}
-function dt(ms, opt) { return new Date(ms).toLocaleDateString('fr-FR', opt || { day: '2-digit', month: 'short', year: 'numeric' }); }
-const cls = x => x === null || !isFinite(x) ? '' : x > 0 ? 'up' : x < 0 ? 'down' : '';
-const sgn = x => x > 0 ? '+' : '';
-
-/* ---------------------- jauges et jetons de couleur ---------------------
-   Un ratio unique se lit sur une jauge lineaire, pas sur un cadran : la
-   piste est un pas plus clair de la meme rampe, le remplissage porte la
-   severite. Une valeur signee se lit sur une jauge divergente dont le
-   point mort est un gris neutre, jamais une teinte.                      */
-const cssVar = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-/** teinte derivee d'un jeton CSS : aucune couleur ne doit etre ecrite en dur,
-    sinon elle ne suit pas le mode daltonien */
-function tint(name, alpha) {
-  const h = cssVar(name);
-  const m = /^#?([0-9a-f]{6})$/i.exec(h);
-  if (!m) return h;
-  const v = parseInt(m[1], 16);
-  return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${alpha})`;
-}
-
-/** jauge simple 0 -> max */
-function meter(v, max = 100, color = 'var(--accent)', tall = false) {
-  const w = clamp((v || 0) / max * 100, 0, 100);
-  return `<div class="meter${tall ? ' tall' : ''}"><i style="width:${w}%;background:${color}"></i></div>`;
-}
-/** jauge divergente centree sur zero : l'extremite de donnee est arrondie,
-    le cote du point mort reste carre */
-function meterDiv(v, tall = false) {
-  const a = clamp(Math.abs(v || 0), 0, 100) / 2;
-  const pos = (v || 0) >= 0;
-  const r = tall ? 4 : 3;
-  const rad = pos ? `0 ${r}px ${r}px 0` : `${r}px 0 0 ${r}px`;
-  return `<div class="meter div${tall ? ' tall' : ''}"><i style="width:${a}%;left:${pos ? 50 : 50 - a}%;background:${pos ? 'var(--up)' : 'var(--down)'};border-radius:${rad}"></i></div>`;
-}
-/** couleur de severite pour une echelle de risque croissante */
-const sevColor = v => v > 65 ? 'var(--critical)' : v > 45 ? 'var(--warn)' : 'var(--good)';
-/** couleur d'une echelle de qualite croissante */
-const qualColor = v => v >= 65 ? 'var(--up)' : v >= 45 ? 'var(--warn)' : 'var(--text-3)';
-
-function toast(msg, kind = '') {
-  const t = el(`<div class="toast ${kind}">${esc(msg)}</div>`);
-  document.body.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; t.style.transition = '.3s'; setTimeout(() => t.remove(), 300); }, 3600);
-}
+/* ============================ mise en forme =============================
+   Toutes les aides de formatage et les composants de jauge vivent dans
+   format.js : elles sont partagees avec les vues du comparateur.          */
 
 /* ================================== API ================================= */
 const cache = new Map();
@@ -134,6 +68,13 @@ function postJSON(path, body) {
 
 const getChart = (sym, range, interval) => api(`/api/chart?symbol=${encodeURIComponent(sym)}&range=${range}&interval=${interval}`);
 const getFund = sym => api(`/api/fundamentals?symbol=${encodeURIComponent(sym)}`);
+/** Avis d'analystes datés — souvent vides hors marché américain. */
+const getAnalystes = sym => api(`/api/analystes?symbol=${encodeURIComponent(sym)}`);
+/** Historique quotidien profond : indispensable pour traverser une crise.
+    Les raccourcis de Yahoo degradent l'intervalle au-dela de quelques
+    annees, il faut donc passer des bornes de dates explicites. */
+const getChartLong = (sym, depuis = '2000-01-01') =>
+  api(`/api/chart?symbol=${encodeURIComponent(sym)}&from=${depuis}&interval=1d`);
 
 function periodCfg() { return PERIODES.find(p => p.key === S.period) || PERIODES[2]; }
 
@@ -239,6 +180,14 @@ function renderProfileSummary() {
      <div>Capital ${money(S.profile.capital, 'EUR')} · risque ${R.riskPerTrade} %/ligne</div>`;
 }
 
+/** Ce que les vues externes ont besoin de connaitre de l'application. */
+function ctxApp() {
+  return {
+    api, getChart, getFund, getAnalystes, getChartLong,
+    periodCfg, ensureReport, render, selectSymbol, terme
+  };
+}
+
 /* ================================ routeur =============================== */
 async function render() {
   const c = $('#content');
@@ -247,7 +196,7 @@ async function render() {
   const views = {
     analyse: viewAnalyse, screener: viewScreener, backtest: viewBacktest,
     portefeuille: viewPortefeuille, journal: viewJournal,
-    academie: viewAcademie, comparateur: viewComparateur, quiz: viewQuiz, reglages: viewReglages
+    academie: viewAcademie, comparateur: c2 => vueComparateur(c2, S, ctxApp()), quiz: viewQuiz, reglages: viewReglages
   };
   try { await views[S.view](c); }
   catch (e) {
@@ -1825,195 +1774,6 @@ async function viewQuiz(c) {
   });
 }
 
-
-/* =========================================================================
-   VUE — COMPARATEUR DE MÉTHODES
-   Les leçons de l'Académie affirment ; cet écran vérifie, sur le titre et
-   la période de votre choix, avec les mêmes frais pour tout le monde.
-   ========================================================================= */
-async function viewComparateur(c) {
-  const focus = S.comparFocus; S.comparFocus = null;
-  const P = periodCfg();
-  const dejaFait = S.compar && S.compar.symbol === S.symbol && S.compar.period === S.period;
-
-  c.innerHTML = `
-    <div class="card">
-      <h3>Comparateur de méthodes <span class="sub">${esc(S.symbol)} · ${esc(P.label)}</span></h3>
-      <p class="sm dim" style="margin-top:0;max-width:82ch">
-        Chaque méthode est implémentée telle qu'elle est définie dans sa source, sans l'améliorer après coup.
-        Toutes subissent les mêmes règles : décision à la clôture, exécution à l'ouverture suivante,
-        frais et glissement déduits à l'aller comme au retour, capital non rémunéré hors position.
-        C'est la seule façon d'obtenir une comparaison honnête.
-      </p>
-      <div class="row wrap" style="gap:10px;margin-top:12px">
-        <div><label class="field">Frais (points de base)</label><input type="number" id="cf_fee" value="10" style="width:90px"></div>
-        <div><label class="field">Glissement (pdb)</label><input type="number" id="cf_slip" value="5" style="width:90px"></div>
-        <div style="align-self:flex-end"><button class="btn primary" id="cmpRun">Comparer les ${METHODES.length} méthodes</button></div>
-      </div>
-      <div id="cmpProg" style="margin-top:12px;display:none">
-        <div class="progress"><i id="cmpBar" style="width:0%"></i></div>
-        <div class="xs faint" id="cmpTxt" style="margin-top:6px"></div>
-      </div>
-    </div>
-    <div id="cmpOut">${dejaFait ? '' : `<div class="empty"><div class="big">⚖</div>
-      Lancez la comparaison pour voir ce que chaque méthode aurait réellement donné sur ${esc(S.symbol)}<br>
-      <span class="sm">le résultat change complètement d'un titre à l'autre — c'est la leçon principale</span></div>`}</div>
-    <div class="card">
-      <h3>Les méthodes testées</h3>
-      <div class="grid g2" style="gap:10px">
-        ${METHODES.map(m => `<details class="acc-block" ${focus === m.id ? 'open' : ''} id="m-${m.id}">
-          <summary>${esc(m.nom)} <span class="xs faint">· ${esc(m.famille)}</span></summary>
-          <div class="inner">
-            <p class="sm dim" style="margin:4px 0 8px">${esc(m.resume)}</p>
-            <div class="formula">${m.regles.map(x => '· ' + x).join('\n')}</div>
-            <p class="xs faint" style="margin-top:8px">${esc(m.reference)}</p>
-          </div>
-        </details>`).join('')}
-      </div>
-    </div>`;
-
-  $('#cmpRun').onclick = () => lancerComparaison();
-  if (dejaFait) renderComparaison();
-  if (focus) document.getElementById('m-' + focus)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-async function lancerComparaison() {
-  const r = await ensureReport();
-  const prog = $('#cmpProg'), bar = $('#cmpBar'), txt = $('#cmpTxt');
-  prog.style.display = 'block';
-  $('#cmpRun').disabled = true;
-  prepareForStrategies(r.ind);
-  const opts = {
-    feeBps: +$('#cf_fee').value, slippageBps: +$('#cf_slip').value,
-    capital: S.profile.capital, start: 260
-  };
-  const res = await comparerMethodes(r.ind, opts, S.profile, (p, nom) => {
-    bar.style.width = (p * 100) + '%';
-    txt.textContent = nom ? `Test en cours : ${nom}…` : 'Finalisation…';
-  });
-  prog.style.display = 'none';
-  $('#cmpRun').disabled = false;
-  S.compar = { ...res, symbol: S.symbol, period: S.period, nom: r.ctx.name, ind: r.ind };
-  renderComparaison();
-}
-
-function renderComparaison() {
-  const C = S.compar, out = $('#cmpOut');
-  if (!C || !out) return;
-  const res = C.resultats, ref = C.reference;
-
-  // Aucune methode n'a pu tourner : c'est le cas quand la periode chargee est
-  // trop courte (il faut environ 300 seances pour amorcer une MM200 puis
-  // laisser de la place au test). On l'explique au lieu de planter.
-  if (!res || !res.length) {
-    out.innerHTML = `<div class="card">
-      <h3>Comparaison impossible sur cette période</h3>
-      <p class="sm dim" style="margin:0;max-width:78ch">
-        Ces méthodes s'appuient sur des moyennes longues (jusqu'à 200 séances) : il faut au minimum
-        <b>300 séances</b> d'historique pour en amorcer une, puis assez de recul pour la tester.
-        La période « ${esc(periodCfg().label)} » n'en fournit pas assez.
-        Choisissez <b>2 ans</b> ou plus dans la barre du haut, puis relancez.
-      </p>
-    </div>`;
-    return;
-  }
-
-  const meilleurCalmar = res.reduce((a, b) => (b.calmar ?? -99) > (a.calmar ?? -99) ? b : a);
-  const meilleurDD = res.reduce((a, b) => Math.abs(b.maxDrawdown) < Math.abs(a.maxDrawdown) ? b : a);
-  const meilleurRdt = res.reduce((a, b) => b.rendement > a.rendement ? b : a);
-
-  out.innerHTML = `
-    <div class="grid g3" style="margin-bottom:16px">
-      <div class="stat">
-        <div class="lbl">Meilleur rendement</div>
-        <div class="val sm">${esc(meilleurRdt.nom)}</div>
-        <div class="note ${cls(meilleurRdt.rendement)}">${pct(meilleurRdt.rendement, 1)} sur la période</div>
-      </div>
-      <div class="stat">
-        <div class="lbl">Repli le plus faible</div>
-        <div class="val sm">${esc(meilleurDD.nom)}</div>
-        <div class="note down">${pct(meilleurDD.maxDrawdown, 1)} de perte maximale</div>
-      </div>
-      <div class="stat">
-        <div class="lbl">Meilleur rapport rendement / repli</div>
-        <div class="val sm acc">${esc(meilleurCalmar.nom)}</div>
-        <div class="note">ratio de Calmar ${n(meilleurCalmar.calmar, 2)}</div>
-      </div>
-    </div>
-
-    <div class="card pad0">
-      <div class="row between" style="padding:16px 18px 6px">
-        <h3 style="margin:0">Classement sur ${esc(C.nom || C.symbol)}
-          <span class="sub">trié par rapport rendement / repli</span></h3>
-      </div>
-      <div style="overflow-x:auto">
-      <table>
-        <thead><tr>
-          <th>Méthode</th><th>Famille</th><th class="num">Rendement</th><th class="num">Par an</th>
-          <th class="num">Repli max.</th><th class="num">Calmar</th><th class="num">Sharpe</th>
-          <th class="num">% investi</th><th class="num">Opér.</th><th class="num">Réussite</th>
-          <th class="num">Facteur profit</th><th class="num">vs détention</th>
-        </tr></thead>
-        <tbody>
-        ${res.map(x => `<tr class="${x.id === 'buyhold' ? '' : ''}">
-          <td><span class="b">${esc(x.nom)}</span>${x.id === 'buyhold' ? ' <span class="badge plain">référence</span>' : ''}${x.id === 'alphadesk' ? ' <span class="badge info">maison</span>' : ''}</td>
-          <td class="sm dim">${esc(x.famille)}</td>
-          <td class="num b ${cls(x.rendement)}">${pct(x.rendement, 1)}</td>
-          <td class="num ${cls(x.cagr)}">${x.cagr === null ? '—' : pct(x.cagr, 1)}</td>
-          <td class="num down">${pct(x.maxDrawdown, 1)}</td>
-          <td class="num ${x.calmar > 0.5 ? 'up' : ''}">${n(x.calmar, 2)}</td>
-          <td class="num">${n(x.sharpe, 2)}</td>
-          <td class="num faint">${n(x.exposition, 0)} %</td>
-          <td class="num faint">${x.operations}</td>
-          <td class="num">${x.tauxReussite === null ? '—' : n(x.tauxReussite, 0) + ' %'}</td>
-          <td class="num ${x.facteurProfit > 1.3 ? 'up' : x.facteurProfit < 1 ? 'down' : ''}">${x.facteurProfit === Infinity ? '∞' : n(x.facteurProfit, 2)}</td>
-          <td class="num b ${cls(x.ecartVsReference)}">${x.id === 'buyhold' ? '—' : pct(x.ecartVsReference, 1)}</td>
-        </tr>`).join('')}
-        </tbody>
-      </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Évolution du capital <span class="sub">référence en gris, trois meilleures méthodes en couleur</span></h3>
-      <div class="chart-host"><canvas id="cmpChart"></canvas></div>
-    </div>
-
-    <div class="card">
-      <h3>Ce que ce classement dit — et ce qu'il ne dit pas</h3>
-      <p class="sm" style="line-height:1.7;color:#ccd3de;max-width:84ch">${esc(C.lecture)}</p>
-      <div class="note-line" style="margin-top:10px">
-        <span class="pin">⚠</span>
-        <span class="sm dim">Un classement établi sur <b>un seul titre</b> et <b>une seule période</b> ne prouve rien.
-        Relancez cette comparaison sur trois ou quatre valeurs très différentes — une en forte tendance, une qui oscille,
-        un indice large. Si une méthode arrive en tête partout, elle mérite votre attention. Si le classement change
-        du tout au tout, c'est que vous regardez du bruit, et la bonne conclusion est de s'en tenir à la méthode
-        la plus simple et la moins coûteuse.</span>
-      </div>
-      <div class="note-line">
-        <span class="pin">ℹ</span>
-        <span class="sm dim">Le <b>ratio de Calmar</b> (rendement annuel ÷ repli maximal) est la colonne la plus utile :
-        il récompense les méthodes qu'on peut réellement suivre jusqu'au bout, pas celles qui affichent le plus gros
-        chiffre au prix d'une perte intenable en cours de route.</span>
-      </div>
-    </div>`;
-
-  const cv = $('#cmpChart');
-  if (cv) {
-    const top = res.filter(x => x.id !== 'buyhold').slice(0, 3);
-    const couleurs = ['#3987e5', '#c98500', '#d55181'];   // triple validée toutes paires
-    const lc = new LineChart(cv);
-    S.charts.cmp = lc;
-    lc.setData({
-      height: 280,
-      dates: ref ? ref.equity.dates : top[0]?.equity.dates,
-      series: [
-        ...(ref ? [{ data: ref.equity.values, color: cssVar('--text-3'), width: 1.6, label: 'Achat et conservation' }] : []),
-        ...top.map((x, k) => ({ data: x.equity.values, color: couleurs[k], width: 2, label: x.nom }))
-      ]
-    });
-  }
-}
 
 /* =========================================================================
    VUE 8 — RÉGLAGES

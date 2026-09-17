@@ -144,6 +144,56 @@ au tout, vous regardez du bruit.
 - **Publication de résultats** — avertissement quand elle tombe dans les jours qui viennent : un écart
   d'ouverture saute par-dessus les stops, donc le risque réel dépasse ce que le plan a calculé.
 
+## Le comparateur — quatre questions, quatre réponses
+
+C'est la pièce centrale. Il ne demande pas « qu'est-ce qui a gagné » mais **« sur quoi puis-je m'appuyer »**.
+
+### 1. Sur ce titre
+Les 11 méthodes rejouées sur la valeur affichée. Instructif, mais insuffisant pour décider.
+
+### 2. Épreuve de robustesse — le seul test qui permet de choisir
+Chaque méthode est rejouée sur **dix valeurs à la fois**, jusqu'à **26 ans d'historique quotidien**
+(depuis 2000, crises comprises). Chacune reçoit une **note de robustesse sur 100** qui ne récompense
+pas la performance mais la **régularité** :
+
+| Critère | Points | Ce qu'il mesure |
+|---|---|---|
+| Meilleur rapport gain / souffrance | 35 | Sur combien de valeurs le trajet a été meilleur, pas juste l'arrivée |
+| Réduit les pertes | 25 | Pondéré par le temps réellement investi — *rester en liquidités ne rapporte pas de points* |
+| Coût en rendement annuel | 20 | Perdre un peu pour dormir beaucoup mieux est un bon échange |
+| Constance d'une valeur à l'autre | 20 | Une méthode qui explose sur une valeur et s'effondre ailleurs est une loterie |
+
+L'écran affiche aussi une **note de fiabilité du classement lui-même** : avec trois valeurs sur cinq ans,
+il le dit franchement au lieu de laisser croire à un résultat.
+
+**Trois pièges désamorcés explicitement**, parce que chacun m'a donné un faux classement pendant le
+développement :
+- *Le piège des liquidités* — une méthode jamais investie « protège » parfaitement de tout. Les points
+  de protection sont donc pondérés par la participation réelle.
+- *Le piège du cumul* — sur 26 ans les gains composent ; un écart de « 400 points » ne veut rien dire.
+  Tout est comparé en **rendement annuel**.
+- *Le piège du sous-ensemble* — une méthode testable sur 4 valeurs seulement n'est pas comparable à une
+  autre testée sur 10. La note en tient compte et la ligne le signale.
+
+### 3. Résistance aux crises
+Les vraies crises rejouées sur les données réelles : **2000-2003, 2008, 2011, Covid 2020, 2022**.
+Pour chaque méthode et chaque épisode : perte encaissée, **temps de récupération**, et temps réellement
+investi pendant la crise. Plus quatre **scénarios inventés** (krach éclair, baisse lente, choc en V,
+trois ans sans direction), calibrés sur la volatilité réelle du titre et tirés de façon déterministe
+pour que la comparaison reste équitable.
+
+### 4. Suivre les analystes
+« Est-ce que je gagne de l'argent si je suis les cabinets qui notent les entreprises ? »
+Question testée sur leur **historique daté d'avis** (près de 1 000 pour une grande valeur américaine),
+avec le consensus reconstitué jour après jour — et un **test de contrôle** qui fait exactement l'inverse.
+Si suivre et inverser gagnent tous les deux, ce n'est pas l'avis qui porte l'information : l'écran le dit.
+
+L'écran mesure aussi la **justesse de leurs objectifs de cours** : sur AAPL, +102 % annoncés en moyenne
+à un an contre +35,5 % réellement obtenus, objectif atteint dans 43 % des cas sur 447 révisions.
+
+> **Limite honnête** : cet historique d'avis existe pour la plupart des valeurs américaines, presque
+> jamais pour les valeurs européennes. L'application le dit au lieu de laisser croire qu'il n'y a pas d'avis.
+
 ## Le système visuel
 
 La couleur est assignée par le **rôle qu'elle joue**, jamais par goût — et la partie
@@ -234,6 +284,11 @@ AlphaDesk/
         ├── academy.js      19 fiches indicateurs, 4 parcours, 8 questions de quiz
         ├── lessons.js      8 leçons de méthode (preuves, coûts, biais) + plan en 4 semaines
         ├── strategies.js   11 méthodes exécutables + moteur de comparaison
+        ├── analystes.js    avis de cabinets datés, consensus reconstitué, test de contrôle
+        ├── robustesse.js   épreuve multi-titres, note de robustesse, verdict en clair
+        ├── crises.js       crises réelles rejouées + scénarios inventés
+        ├── format.js       mise en forme française + glossaire au survol
+        ├── vues-comparateur.js  les quatre volets du comparateur
         ├── universe.js     listes de valeurs à scanner
         ├── portfolio.js    positions, journal, risque agrégé, alertes
         └── app.js          interface et vues

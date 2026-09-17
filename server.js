@@ -157,12 +157,25 @@ function normalizeChart(j) {
 }
 
 /* ------------------------------ endpoints ------------------------------- */
-async function apiChart(symbol, range, interval) {
-  const key = `chart_${symbol}_${range}_${interval}`;
-  const ttl = /m$|h$/.test(interval) ? 60 * 1000 : 15 * 60 * 1000;
+/**
+ * Series de cotations.
+ * `range` accepte les raccourcis Yahoo (1y, 5y, max...), MAIS au-dela de
+ * quelques annees Yahoo degrade silencieusement l'intervalle : un `max` en
+ * `1d` renvoie en realite du mensuel. Pour obtenir du VRAI quotidien sur une
+ * longue periode il faut passer des bornes de dates explicites — c'est ce
+ * que font `from`/`to`, indispensables au simulateur de crises.
+ */
+async function apiChart(symbol, range, interval, from = null, to = null) {
+  const bornes = from ? `from${from}_to${to || 'now'}` : range;
+  const key = `chart_${symbol}_${bornes}_${interval}`;
+  const ttl = from ? 7 * 24 * 3600 * 1000       // historique ancien : il ne bouge plus
+    : /m$|h$/.test(interval) ? 60 * 1000 : 15 * 60 * 1000;
   const hit = cacheGet(key, ttl); if (hit) return hit;
   try {
-    const j = await yfetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false&events=div%2Csplit`);
+    const periode = from
+      ? `period1=${Math.floor(Date.parse(from) / 1000)}&period2=${Math.floor((to ? Date.parse(to) : Date.now()) / 1000)}`
+      : `range=${range}`;
+    const j = await yfetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?${periode}&interval=${interval}&includePrePost=false&events=div%2Csplit`);
     const n = normalizeChart(j);
     const ev = j?.chart?.result?.[0]?.events || {};
     n.dividends = Object.values(ev.dividends || {});
@@ -227,6 +240,48 @@ async function apiFundamentals(symbol) {
   } catch (e) {
     const stale = cacheGetStale(key); if (stale) return stale;
     return { error: e.message, name: symbol };
+  }
+}
+
+/**
+ * Historique DATE des avis d'analystes (upgrades / downgrades).
+ * Disponible pour la plupart des valeurs americaines, tres souvent vide pour
+ * les valeurs europeennes : l'application doit le dire au lieu de faire
+ * croire a une absence d'avis.
+ */
+async function apiAnalystes(symbol) {
+  const key = `analystes_${symbol}`;
+  const hit = cacheGet(key, 24 * 3600 * 1000); if (hit) return hit;
+  try {
+    const j = await yfetch(
+      `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=upgradeDowngradeHistory,recommendationTrend`,
+      { withCrumb: true });
+    const r = j?.quoteSummary?.result?.[0] || {};
+    const brut = r.upgradeDowngradeHistory?.history || [];
+    const avis = brut
+      .filter(x => x.epochGradeDate && x.toGrade)
+      .map(x => ({
+        date: x.epochGradeDate * 1000,
+        cabinet: x.firm || '?',
+        note: x.toGrade,
+        noteAvant: x.fromGrade || '',
+        action: x.action || '',
+        objectif: x.currentPriceTarget ?? null,
+        objectifAvant: x.priorPriceTarget ?? null
+      }))
+      .sort((a, b) => a.date - b.date);
+    const out = {
+      symbol, disponible: avis.length >= 20, nombre: avis.length,
+      debut: avis.length ? avis[0].date : null,
+      fin: avis.length ? avis[avis.length - 1].date : null,
+      cabinets: [...new Set(avis.map(a => a.cabinet))].length,
+      avis,
+      tendance: (r.recommendationTrend?.trend || []).slice(0, 4)
+    };
+    cacheSet(key, out); return out;
+  } catch (e) {
+    const stale = cacheGetStale(key); if (stale) return stale;
+    return { symbol, disponible: false, nombre: 0, avis: [], erreur: e.message };
   }
 }
 
@@ -311,7 +366,17 @@ const server = http.createServer(async (req, res) => {
       if (p === '/api/chart') {
         const s = url.searchParams.get('symbol');
         if (!s) return sendJSON(res, 400, { error: 'symbol requis' });
-        return sendJSON(res, 200, await apiChart(s, url.searchParams.get('range') || '2y', url.searchParams.get('interval') || '1d'));
+        return sendJSON(res, 200, await apiChart(
+          s,
+          url.searchParams.get('range') || '2y',
+          url.searchParams.get('interval') || '1d',
+          url.searchParams.get('from'),
+          url.searchParams.get('to')));
+      }
+      if (p === '/api/analystes') {
+        const s = url.searchParams.get('symbol');
+        if (!s) return sendJSON(res, 400, { error: 'symbol requis' });
+        return sendJSON(res, 200, await apiAnalystes(s));
       }
       if (p === '/api/search') {
         const q = (url.searchParams.get('q') || '').trim();

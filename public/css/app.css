@@ -427,3 +427,20 @@ details.acc-block .inner { padding: 4px 15px 15px; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ------------------------- glossaire au survol --------------------------
+   Le lecteur n'est pas un professionnel : chaque terme technique porte sa
+   definition, sans quitter la page.                                       */
+abbr.gloss {
+  text-decoration: none;
+  border-bottom: 1px dotted var(--text-3);
+  cursor: help;
+}
+abbr.gloss:hover { border-bottom-color: var(--accent); color: var(--text); }
+
+/* cases a cocher lisibles sur fond sombre */
+input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+
+/* ligne de tableau cliquable : indice visuel discret */
+tbody tr.clickable:hover { background: var(--surface-2); }
+tbody tr.clickable:hover td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
